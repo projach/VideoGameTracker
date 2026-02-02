@@ -68,6 +68,7 @@ dependencies {
     //api
     implementation(libs.retrofit)
     implementation(libs.converter.gson)
+    implementation(libs.logging.interceptor)
 
     //di
     implementation(libs.androidx.hilt.navigation.compose)
