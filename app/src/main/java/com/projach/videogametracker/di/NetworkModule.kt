@@ -15,11 +15,20 @@ import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
+import javax.inject.Qualifier
 import javax.inject.Singleton
 
 @Module
 @InstallIn(SingletonComponent::class)
 object NetworkModule {
+    @Qualifier
+    @Retention(AnnotationRetention.BINARY)
+    annotation class IgdbRetrofit
+
+    @Qualifier
+    @Retention(AnnotationRetention.BINARY)
+    annotation class TwitchRetrofit
+
     @Provides
     @Singleton
     fun provideOkHttpClient(tokenManager: IgdbTokenManager): OkHttpClient {
@@ -34,6 +43,7 @@ object NetworkModule {
                 .build()
             chain.proceed(request)
         }
+
         if (BuildConfig.DEBUG) {
             val logging = HttpLoggingInterceptor().apply {
                 level = HttpLoggingInterceptor.Level.BODY
@@ -46,6 +56,7 @@ object NetworkModule {
 
     @Provides
     @Singleton
+    @IgdbRetrofit
     fun provideIgdbRetrofit(okHttpClient: OkHttpClient): Retrofit =
         Retrofit.Builder()
             .client(okHttpClient)
@@ -55,11 +66,12 @@ object NetworkModule {
 
     @Provides
     @Singleton
-    fun provideIgdbEndpoints(retrofit: Retrofit): IgdbApi =
+    fun provideIgdbEndpoints(@IgdbRetrofit retrofit: Retrofit): IgdbApi =
         retrofit.create(IgdbApi::class.java)
 
     @Provides
     @Singleton
+    @TwitchRetrofit
     fun provideTwitchRetrofit(): Retrofit =
         Retrofit.Builder()
             .client(OkHttpClient.Builder().apply {
@@ -76,6 +88,6 @@ object NetworkModule {
 
     @Provides
     @Singleton
-    fun provideTwitchEndpoints(retrofit: Retrofit): TwitchApi =
+    fun provideTwitchEndpoints(@TwitchRetrofit retrofit: Retrofit): TwitchApi =
         retrofit.create(TwitchApi::class.java)
 }

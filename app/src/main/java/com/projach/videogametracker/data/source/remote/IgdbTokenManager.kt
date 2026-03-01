@@ -9,6 +9,7 @@ import com.projach.videogametracker.domain.onSuccess
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
+import java.time.Instant
 import javax.inject.Inject
 
 class IgdbTokenManager @Inject constructor(
@@ -19,8 +20,15 @@ class IgdbTokenManager @Inject constructor(
     private val dataStore by lazy { DataStore(context) }
 
     suspend fun getValidToken(): String? = mutex.withLock {
-        //check if there is token in storage
-        dataStore.getFromStorage(SHARED_PREFERENCES_AUTH_KEY, true)?.let { return it }
+        val expirationTimeMillis = dataStore.getLongFromStorage(TOKEN_EXPIRATION_KEY)
+        val expirationTime = Instant.ofEpochMilli(expirationTimeMillis)
+        val currentTime = Instant.now()
+
+        if (!currentTime.isAfter(expirationTime)){
+            dataStore.getStringFromStorage(TOKEN_KEY)?.let {
+                return it
+            }
+        }
 
         //if there is no token from storage do api call
         return apiCallAsDataResult {
@@ -30,7 +38,9 @@ class IgdbTokenManager @Inject constructor(
                 grantType = GRANT_TYPE
             )
         }.onSuccess {
-            //TODO(save expiration date)
+            it?.expiresIn?.let { expiresIn ->
+                saveExpirationDate(expiresIn)
+            }
 
             //save token from server
             it?.accessToken?.let { token ->
@@ -39,9 +49,17 @@ class IgdbTokenManager @Inject constructor(
         }.getOrNull()?.accessToken
     }
 
+    private fun saveExpirationDate(expiresIn: Long){
+        val expirationTime = Instant.now().plusSeconds(expiresIn)
+
+        dataStore.saveLongToStorage(
+            TOKEN_EXPIRATION_KEY,
+            expirationTime.toEpochMilli()
+        )
+    }
+
     companion object {
         private const val TOKEN_KEY = "TOKEN_KEY"
         private const val TOKEN_EXPIRATION_KEY = "TOKEN_EXPIRATION_KEY"
-        private const val SHARED_PREFERENCES_AUTH_KEY = "auth_token"
     }
 }

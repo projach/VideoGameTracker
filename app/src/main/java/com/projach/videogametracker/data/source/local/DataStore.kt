@@ -1,9 +1,9 @@
 package com.projach.videogametracker.data.source.local
 
 import android.content.Context
-import android.util.Log
 import androidx.core.content.edit
 import com.projach.videogametracker.data.source.local.security.Encryption
+import com.projach.videogametracker.utils.VideoGameTrackerLogger
 
 class DataStore(context: Context) {
     private val dataStore =
@@ -30,16 +30,20 @@ class DataStore(context: Context) {
         }
     }
 
-    fun getFromStorage(key: String, shouldDecrypt: Boolean): String? = runCatching {
-        val item = dataStore.getString(key, null) ?: return null
-        when(shouldDecrypt){
-            true -> Encryption.decrypt(item)
-            false -> item
-        }
+    fun getStringFromStorage(key: String): String? = runCatching {
+        Encryption.decrypt(dataStore.getString(key, null) ?: return null)
     }.getOrElse { e ->
-        Log.d("TokenDataStore", "Could not get data with exception $e")
+        VideoGameTrackerLogger.d("TokenDataStore", "Could not get data with exception $e")
         null
     }
+
+    fun getLongFromStorage(key: String): Long = runCatching {
+        dataStore.getLong(key, 0)
+    }.getOrElse { e ->
+        VideoGameTrackerLogger.d("TokenDataStore", "Could not get data with exception $e")
+        0
+    }
+
 
     companion object {
         private const val SHARED_PREFERENCES_KEY = "video_games_app_preference"
