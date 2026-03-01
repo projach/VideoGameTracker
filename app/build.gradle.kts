@@ -1,4 +1,5 @@
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
+import java.util.Properties
 
 plugins {
     alias(libs.plugins.android.application)
@@ -16,12 +17,17 @@ android {
 
     defaultConfig {
         applicationId = "com.projach.videogametracker"
-        minSdk = 24
+        minSdk = 26
         targetSdk = 36
         versionCode = 1
         versionName = "1.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+        //get config for api key from local.properties
+        val properties = Properties()
+        properties.load(project.rootProject.file("local.properties").inputStream())
+        buildConfigField("String", "IGDB_CLIENT_ID", properties.getProperty("IGDB_CLIENT_ID"))
+        buildConfigField("String", "TWITCH_CLIENT_SECRET", properties.getProperty("TWITCH_CLIENT_SECRET"))
     }
 
     buildTypes {
@@ -44,6 +50,7 @@ android {
     }
     buildFeatures {
         compose = true
+        buildConfig = true
     }
 }
 
@@ -68,6 +75,7 @@ dependencies {
     //api
     implementation(libs.retrofit)
     implementation(libs.converter.gson)
+    implementation(libs.logging.interceptor)
 
     //di
     implementation(libs.androidx.hilt.navigation.compose)
