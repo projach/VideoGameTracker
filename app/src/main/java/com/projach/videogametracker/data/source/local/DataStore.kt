@@ -33,14 +33,14 @@ class DataStore(context: Context) {
     fun getStringFromStorage(key: String): String? = runCatching {
         Encryption.decrypt(dataStore.getString(key, null) ?: return null)
     }.getOrElse { e ->
-        VideoGameTrackerLogger.d("TokenDataStore", "Could not get data with exception $e")
+        VideoGameTrackerLogger.e("TokenDataStore", "Could not get data with exception $e")
         null
     }
 
     fun getLongFromStorage(key: String): Long = runCatching {
         dataStore.getLong(key, 0)
     }.getOrElse { e ->
-        VideoGameTrackerLogger.d("TokenDataStore", "Could not get data with exception $e")
+        VideoGameTrackerLogger.e("TokenDataStore", "Could not get data with exception $e")
         0
     }
 
