@@ -3,7 +3,7 @@ package com.projach.videogametracker.data.source.local
 import android.content.Context
 import androidx.core.content.edit
 import com.projach.videogametracker.data.source.local.security.Encryption
-import com.projach.videogametracker.utils.VideoGameTrackerLogger
+import com.projach.videogametracker.utils.Logger
 
 class DataStore(context: Context) {
     private val dataStore =
@@ -33,14 +33,14 @@ class DataStore(context: Context) {
     fun getStringFromStorage(key: String): String? = runCatching {
         Encryption.decrypt(dataStore.getString(key, null) ?: return null)
     }.getOrElse { e ->
-        VideoGameTrackerLogger.e("TokenDataStore", "Could not get data with exception $e")
+        Logger.e("TokenDataStore", "Could not get data with exception $e")
         null
     }
 
     fun getLongFromStorage(key: String): Long = runCatching {
         dataStore.getLong(key, 0)
     }.getOrElse { e ->
-        VideoGameTrackerLogger.e("TokenDataStore", "Could not get data with exception $e")
+        Logger.e("TokenDataStore", "Could not get data with exception $e")
         0
     }
 

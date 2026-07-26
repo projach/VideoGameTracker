@@ -1,6 +1,5 @@
 package com.projach.videogametracker.data
 
-import android.util.Log
 import com.projach.videogametracker.data.source.remote.IgdbApi
 import com.projach.videogametracker.data.source.remote.apiCallAsDataResult
 import com.projach.videogametracker.domain.DataResult
@@ -10,21 +9,18 @@ import com.projach.videogametracker.domain.buildIgdbBodyTopRated
 import com.projach.videogametracker.domain.mapSuccess
 import com.projach.videogametracker.domain.models.VideoGameModel
 import com.projach.videogametracker.domain.onSuccess
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.SupervisorJob
-import kotlinx.coroutines.sync.Mutex
+import com.projach.videogametracker.utils.Logger
+import java.util.Collections.emptyMap
 import javax.inject.Inject
 
 class VideoGamesRepositoryImpl @Inject constructor(
     private val igdbApi: IgdbApi
-): VideoGamesRepository {
-    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
-    private var page = 0
-    private val mutex =  Mutex()
-    private val videoGamesMap: LinkedHashMap<Int, VideoGameModel> = linkedMapOf()
+) : VideoGamesRepository {
+    override suspend fun fetchVideoGames(
+        page: Int
+    ): DataResult<List<VideoGameModel>> {
+        val videoGamesMap: MutableMap<Int, VideoGameModel> = mutableMapOf()
 
-    override suspend fun fetchVideoGames(): DataResult<List<VideoGameModel>> {
         return apiCallAsDataResult {
             igdbApi.getVideoGames(
                 buildIgdbBodyTopRated(
@@ -33,17 +29,8 @@ class VideoGamesRepositoryImpl @Inject constructor(
                 )
             )
         }.onSuccess {
-//            scope.launch {
-//                mutex.withLock {
-                    videoGamesMap.putAll(
-                        it?.let { it.map { it.toModel() }.associateBy { it.id } } ?: emptyMap()
-                    )
-//                }
-//            }
-            //add new page to get next items
-            page++
+            videoGamesMap.putAll(it.let { it?.map { it.toModel() }?.associateBy { it.id } ?: emptyMap() })
         }.mapSuccess {
-            Log.d("Map success", "List of games: ${videoGamesMap.values.toList().joinToString()}")
             videoGamesMap.values.toList()
         }
     }

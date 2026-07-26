@@ -1,4 +1,5 @@
 <resources>
     <string name="app_name">VideoGameTracker</string>
     <string name="no_description">No description found for this game!</string>
+    <string name="na">N/A</string>
 </resources>

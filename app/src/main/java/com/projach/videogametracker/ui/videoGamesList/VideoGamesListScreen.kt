@@ -1,21 +1,23 @@
 package com.projach.videogametracker.ui.videoGamesList
 
-import android.util.Log
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -25,69 +27,89 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
-import androidx.compose.ui.tooling.preview.PreviewFontScale
-import androidx.compose.ui.tooling.preview.PreviewScreenSizes
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import androidx.paging.LoadState
+import androidx.paging.compose.collectAsLazyPagingItems
+import androidx.paging.compose.itemKey
 import coil3.compose.AsyncImage
 import coil3.request.ImageRequest
 import coil3.request.crossfade
 import com.projach.videogametracker.R
-import com.projach.videogametracker.domain.PAGE_LIMIT
-import com.projach.videogametracker.domain.models.VideoGameModel
 import com.projach.videogametracker.ui.IgdbImageSize
 import com.projach.videogametracker.ui.changeIgdbSize
 import com.projach.videogametracker.ui.theme.VideoGameTrackerTheme
 import com.projach.videogametracker.ui.unixTimeToDateTime
+import com.projach.videogametracker.utils.Logger
 
 @Composable
 fun VideoGamesListScreen() {
     val viewModel: VideoGamesListViewModel = hiltViewModel()
-    val uiState by viewModel.uiState.collectAsState()
-    Content(
-        uiState.videoGames,
-        viewModel::onItemClick,
-        viewModel::fetchVideoGames,
-        viewModel::onAddToFavoritesClick
-    )
-}
+    val games = viewModel.games.collectAsLazyPagingItems()
 
-@Composable
-fun Content(
-    videoGamesList: List<VideoGameModel>?,
-    onItemClick: (Int) -> Unit,
-    onEndOfList: () -> Unit,
-    onAddToFavoritesClick: (Int) -> Unit
-) {
-    videoGamesList?.let {
-        Log.d("list", it.joinToString())
-        LazyColumn(
-            modifier = Modifier.padding(
-                start = dimensionResource(R.dimen.padding_12),
-                end = dimensionResource(R.dimen.padding_12)
-            )
-        ) {
-            itemsIndexed(items = it, key = { _, item ->
-                item.id
-            }) { index, item ->
-                VideoGameItem(
-                    id = item.id,
-                    name = item.name,
-                    coverUrl = item.coverUrl,
-                    genre = item.genres?.get(0),
-                    releaseDate = item.firstReleaseDate?.unixTimeToDateTime() ?: "N/A",
-                    onItemClick = onItemClick,
-                    onAddToFavoritesClick = onAddToFavoritesClick
-                )
-                if (index == PAGE_LIMIT - 1) {
-                    onEndOfList.invoke()
-                }
+    when (games.loadState.refresh) {
+        is LoadState.Loading -> {
+            Box(
+                modifier = Modifier.fillMaxSize().background(color = Color.Transparent),
+                contentAlignment = Alignment.Center
+            ){
+                CircularProgressIndicator()
             }
+            Logger.d("videoGamesListScreen", "loading games")
+        }
+        is LoadState.Error -> {
+            Logger.d("videoGamesListScreen", "error on games load")
+        }
+        is LoadState.NotLoading -> {}
+    }
+
+    LazyColumn(
+        modifier = Modifier.padding(
+            start = dimensionResource(R.dimen.padding_12),
+            end = dimensionResource(R.dimen.padding_12)
+        )
+    ) {
+        Logger.d("screen", "We have items on screen: ${games.itemCount}")
+        items(
+            count = games.itemCount,
+            key = games.itemKey { it.id }
+        ) { index ->
+            games[index]?.let {
+                VideoGameItem(
+                    id = it.id,
+                    name = it.name,
+                    coverUrl = it.coverUrl,
+                    genre = it.genres?.get(0),
+                    releaseDate = it.firstReleaseDate?.unixTimeToDateTime()
+                        ?: stringResource(R.string.na),
+                    onItemClick = viewModel::onItemClick,
+                    onAddToFavoritesClick = viewModel::onAddToFavoritesClick
+                )
+            }
+        }
+        when(games.loadState.append){
+            is LoadState.Error -> {
+                Logger.d("videoGamesListScreen", "error on games load")
+            }
+            is LoadState.Loading -> {
+                item{
+                    Box(
+                        modifier = Modifier.fillMaxSize().background(color = Color.Transparent),
+                        contentAlignment = Alignment.Center
+                    ){
+                        CircularProgressIndicator()
+                    }
+                }
+                Logger.d("videoGamesListScreen", "loading games")
+            }
+            is LoadState.NotLoading -> {}
         }
     }
 }
@@ -199,39 +221,39 @@ fun VideoGameItem(
     }
 }
 
-@PreviewFontScale
-@PreviewScreenSizes
-@Preview(showBackground = true)
-@Composable
-fun VideoGamesContentPreview() {
-    VideoGameTrackerTheme {
-        Content(
-            videoGamesList = listOf(
-                VideoGameModel(
-                    1,
-                    80.0,
-                    "Kingdom come deliverance is a game about",
-                    "Kingdom Come Deliverance 2",
-                    listOf("RPG"),
-                    null,
-                    1768433644034
-                ),
-                VideoGameModel(
-                    2,
-                    60.0,
-                    "GTA is a game about etc",
-                    "GTA V",
-                    listOf("RPG"),
-                    null,
-                    1768433644034
-                )
-            ),
-            onItemClick = {},
-            onEndOfList = {},
-            onAddToFavoritesClick = {},
-        )
-    }
-}
+//@PreviewFontScale
+//@PreviewScreenSizes
+//@Preview(showBackground = true)
+//@Composable
+//fun VideoGamesContentPreview() {
+//    VideoGameTrackerTheme {
+//        Content(
+//            videoGamesList = listOf(
+//                VideoGameModel(
+//                    1,
+//                    80.0,
+//                    "Kingdom come deliverance is a game about",
+//                    "Kingdom Come Deliverance 2",
+//                    listOf("RPG"),
+//                    null,
+//                    1768433644034
+//                ),
+//                VideoGameModel(
+//                    2,
+//                    60.0,
+//                    "GTA is a game about etc",
+//                    "GTA V",
+//                    listOf("RPG"),
+//                    null,
+//                    1768433644034
+//                )
+//            ),
+//            onItemClick = {},
+//            onEndOfList = {},
+//            onAddToFavoritesClick = {},
+//        )
+//    }
+//}
 
 @Preview(showBackground = true)
 @Composable

@@ -12,6 +12,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.projach.videogametracker.ui.theme.VideoGameTrackerTheme
 import com.projach.videogametracker.ui.videoGamesList.VideoGamesListScreen
+import com.projach.videogametracker.utils.Logger
 import dagger.hilt.android.AndroidEntryPoint
 
 @AndroidEntryPoint
@@ -31,6 +32,7 @@ class MainActivity : ComponentActivity() {
                         modifier = Modifier.padding(contentPadding)
                     ){
                         composable<VideoGamesList> {
+                            Logger.d("navHost", "Navigating to video games list screen")
                             VideoGamesListScreen()
                         }
                     }
