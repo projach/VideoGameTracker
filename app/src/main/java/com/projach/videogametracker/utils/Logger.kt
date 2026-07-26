@@ -3,7 +3,7 @@ package com.projach.videogametracker.utils
 import android.util.Log
 import com.projach.videogametracker.BuildConfig
 
-object VideoGameTrackerLogger {
+object Logger {
     fun d(tag: String?, msg: String){
         if (BuildConfig.DEBUG){
             Log.d(tag, msg)
